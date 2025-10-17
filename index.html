@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公共聊天室</title>
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --primary-color: #4a6fa5;
+            --secondary-color: #6e9cd2;
+            --message-self: #e3f2fd;
+            --message-other: #ffffff;
+            --border-color: #ddd;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --primary-color: #2c4c74;
+            --secondary-color: #3a5c8c;
+            --message-self: #2a4365;
+            --message-other: #2d3748;
+            --border-color: #444;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 2rem;
+        }
+
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 30px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            background-color: var(--message-other);
+            border-radius: 10px;
+            box-shadow: 0 4px 10px var(--shadow-color);
+            overflow: hidden;
+        }
+
+        .messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 15px;
+            border-radius: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+            box-shadow: 0 2px 5px var(--shadow-color);
+        }
+
+        .message.self {
+            background-color: var(--message-self);
+            margin-left: auto;
+            border-bottom-right-radius: 2px;
+        }
+
+        .message.other {
+            background-color: var(--message-other);
+            margin-right: auto;
+            border-bottom-left-radius: 2px;
+            border: 1px solid var(--border-color);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            color: var(--primary-color);
+        }
+
+        .message-content {
+            line-height: 1.4;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 15px;
+            background-color: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            gap: 10px;
+        }
+
+        input, textarea, button {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--message-other);
+            color: var(--text-color);
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        #username {
+            width: 150px;
+        }
+
+        #message {
+            flex-grow: 1;
+            resize: none;
+            min-height: 50px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100px;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background-color: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        .refresh-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #autoRefresh {
+            width: 18px;
+            height: 18px;
+        }
+
+        .status {
+            padding: 10px;
+            text-align: center;
+            background-color: #ffebee;
+            color: #c62828;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .input-area {
+                flex-direction: column;
+            }
+            
+            #username {
+                width: 100%;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>公共聊天室</h1>
+            <label class="theme-switch">
+                <input type="checkbox" id="themeToggle">
+                <span class="slider"></span>
+            </label>
+        </header>
+        
+        <div class="status" id="statusMessage"></div>
+        
+        <div class="chat-container">
+            <div class="messages" id="messages">
+                <div class="message other">
+                    <div class="message-header">
+                        <span class="sender">系统</span>
+                        <span class="time"><?php echo date('H:i'); ?></span>
+                    </div>
+                    <div class="message-content">
+                        欢迎来到公共聊天室！请输入您的昵称和消息开始聊天。
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <input type="text" id="username" placeholder="您的昵称" required>
+                <textarea id="message" placeholder="输入消息..." required></textarea>
+                <button id="sendBtn">发送</button>
+            </div>
+            
+            <div class="info-bar">
+                <div>消息将保存到本地JSON文件</div>
+                <label class="refresh-label">
+                    <input type="checkbox" id="autoRefresh" checked>
+                    自动刷新
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 主题切换功能
+        const themeToggle = document.getElementById('themeToggle');
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        
+        // 检查本地存储或系统偏好
+        const currentTheme = localStorage.getItem('theme') || 
+                            (prefersDarkScheme.matches ? 'dark' : 'light');
+        
+        if (currentTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeToggle.checked = true;
+        }
+        
+        themeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+        // 聊天功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const messagesContainer = document.getElementById('messages');
+            const usernameInput = document.getElementById('username');
+            const messageInput = document.getElementById('message');
+            const sendButton = document.getElementById('sendBtn');
+            const autoRefreshCheckbox = document.getElementById('autoRefresh');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            let refreshInterval = setInterval(loadMessages, 3000); // 每3秒刷新一次
+            
+            // 显示状态消息
+            function showStatus(message, isError = true) {
+                statusMessage.textContent = message;
+                statusMessage.style.display = 'block';
+                statusMessage.style.backgroundColor = isError ? '#ffebee' : '#e8f5e9';
+                statusMessage.style.color = isError ? '#c62828' : '#2e7d32';
+                
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 5000);
+            }
+            
+            // 加载消息
+            function loadMessages() {
+                fetch('chat.php?action=get_messages')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('网络响应不正常');
+                        }
+                        return response.json();
+                    })
+                    .then(messages => {
+                        // 清空消息容器，但保留系统欢迎消息
+                        const welcomeMsg = messagesContainer.querySelector('.message:first-child');
+                        messagesContainer.innerHTML = '';
+                        messagesContainer.appendChild(welcomeMsg);
+                        
+                        if (messages.length === 0) {
+                            return;
+                        }
+                        
+                        messages.forEach(msg => {
+                            const messageEl = document.createElement('div');
+                            messageEl.className = 'message other';
+                            
+                            const messageHeader = document.createElement('div');
+                            messageHeader.className = 'message-header';
+                            messageHeader.innerHTML = `
+                                <span class="sender">${msg.username}</span>
+                                <span class="time">${msg.time}</span>
+                            `;
+                            
+                            const messageContent = document.createElement('div');
+                            messageContent.className = 'message-content';
+                            messageContent.textContent = msg.message;
+                            
+                            messageEl.appendChild(messageHeader);
+                            messageEl.appendChild(messageContent);
+                            messagesContainer.appendChild(messageEl);
+                        });
+                        
+                        // 滚动到底部
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    })
+                    .catch(error => {
+                        console.error('加载消息错误:', error);
+                        showStatus('加载消息失败: ' + error.message);
+                    });
+            }
+            
+            // 发送消息
+            function sendMessage() {
+                const username = usernameInput.value.trim();
+                const message = messageInput.value.trim();
+                
+                if (!username) {
+                    showStatus('请填写昵称！');
+                    usernameInput.focus();
+                    return;
+                }
+                
+                if (!message) {
+                    showStatus('请填写消息内容！');
+                    messageInput.focus();
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('username', username);
+                formData.append('message', message);
+                
+                fetch('chat.php?action=send_message', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应不正常');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        messageInput.value = '';
+                        messageInput.focus();
+                        loadMessages();
+                        showStatus('消息发送成功！', false);
+                    } else {
+                        showStatus('发送失败: ' + (data.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    console.error('发送消息错误:', error);
+                    showStatus('发送失败: ' + error.message);
+                });
+            }
+            
+            // 发送按钮点击事件
+            sendButton.addEventListener('click', sendMessage);
+            
+            // 按Enter发送消息
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // 自动刷新切换
+            autoRefreshCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    refreshInterval = setInterval(loadMessages, 3000);
+                    showStatus('已开启自动刷新', false);
+                } else {
+                    clearInterval(refreshInterval);
+                    showStatus('已关闭自动刷新', false);
+                }
+            });
+            
+            // 初始加载消息
+            loadMessages();
+        });
+    </script>
+</body>
+</html>
